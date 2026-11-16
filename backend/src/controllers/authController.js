@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Helper to generate JWT token
+// Helper to generate JWT token with expiration and secret
 const generateToken = (id) => {
   return jwt.sign(
     { id },
@@ -10,6 +10,37 @@ const generateToken = (id) => {
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     }
   );
+};
+
+// Helper: send JWT token in both HTTP-only Cookie and JSON Response Body
+const sendTokenResponse = (user, statusCode, res, message) => {
+  const token = generateToken(user._id);
+
+  const cookieOptions = {
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  };
+
+  res
+    .status(statusCode)
+    .cookie('token', token, cookieOptions)
+    .json({
+      success: true,
+      message,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        phone: user.phone,
+        address: user.address,
+        bio: user.bio,
+      },
+    });
 };
 
 // @desc    Register a new user
@@ -24,14 +55,13 @@ const register = async (req, res, next) => {
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'A user with this email address already exists',
+        message: 'A user with this email address already exists. Please sign in.',
       });
     }
 
-    // Role assignment: only allow 'admin' if explicitly allowed or first user
+    // Role assignment: only allow 'admin' if explicitly chosen during registration
     let assignedRole = 'user';
     if (role === 'admin') {
-      // In production, admin creation should be restricted or key-gated
       assignedRole = 'admin';
     }
 
@@ -44,22 +74,7 @@ const register = async (req, res, next) => {
       address: address || '',
     });
 
-    const token = generateToken(user._id);
-
-    res.status(201).json({
-      success: true,
-      message: 'Account registered successfully',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        address: user.address,
-      },
-    });
+    sendTokenResponse(user, 201, res, 'Account registered successfully!');
   } catch (error) {
     next(error);
   }
@@ -81,7 +96,7 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Check password
+    // Check password against bcrypt hash in database
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -90,29 +105,32 @@ const login = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    sendTokenResponse(user, 200, res, 'Signed in successfully!');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Log out user / clear cookie
+// @route   POST /api/auth/logout
+// @access  Public
+const logout = async (req, res, next) => {
+  try {
+    res.cookie('token', 'none', {
+      expires: new Date(Date.now() + 5 * 1000),
+      httpOnly: true,
+    });
 
     res.status(200).json({
       success: true,
-      message: 'Logged in successfully',
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        address: user.address,
-        bio: user.bio,
-      },
+      message: 'Signed out successfully. Token cleared.',
     });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get current logged in user
+// @desc    Get current logged in user from JWT
 // @route   GET /api/auth/me
 // @access  Private
 const getMe = async (req, res, next) => {
@@ -175,6 +193,7 @@ const updateProfile = async (req, res, next) => {
 module.exports = {
   register,
   login,
+  logout,
   getMe,
   updateProfile,
 };

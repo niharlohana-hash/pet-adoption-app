@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 const { Server } = require('socket.io');
 const swaggerUi = require('swagger-ui-express');
 
@@ -52,7 +53,8 @@ app.use(
   })
 );
 
-// Body Parser
+// Cookie Parser & Body Parser
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

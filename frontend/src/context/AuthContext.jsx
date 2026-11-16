@@ -43,10 +43,16 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (err) {
+      console.error('Logout error:', err.message);
+    } finally {
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+    }
   };
 
   const updateProfile = async (profileData) => {

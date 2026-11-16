@@ -11,6 +11,7 @@ const request = async (endpoint, options = {}) => {
   };
 
   const config = {
+    credentials: 'include',
     ...options,
     headers,
   };
@@ -38,6 +39,7 @@ export const api = {
       request('/auth/login', { method: 'POST', body: credentials }),
     register: (userData) =>
       request('/auth/register', { method: 'POST', body: userData }),
+    logout: () => request('/auth/logout', { method: 'POST' }),
     getMe: () => request('/auth/me'),
     updateProfile: (profileData) =>
       request('/auth/profile', { method: 'PUT', body: profileData }),

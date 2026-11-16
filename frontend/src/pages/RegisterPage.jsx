@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { PawPrint, Lock, Mail, User, Phone, MapPin } from 'lucide-react';
+import { PawPrint, Lock, Mail, User, Phone, MapPin, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Input } from '../components/common/Input';
@@ -15,6 +15,7 @@ export const RegisterPage = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     address: '',
     role: 'user',
@@ -23,20 +24,24 @@ export const RegisterPage = () => {
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    if (errors[e.target.name]) {
-      setErrors((prev) => ({ ...prev, [e.target.name]: null }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
 
   const validate = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = 'Full name is required';
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      errs.email = 'Valid email is required';
+    if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      errs.email = 'Please provide a valid email address';
     }
     if (!formData.password || formData.password.length < 6) {
       errs.password = 'Password must be at least 6 characters long';
+    }
+    if (formData.password !== formData.confirmPassword) {
+      errs.confirmPassword = 'Passwords do not match';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -48,8 +53,17 @@ export const RegisterPage = () => {
 
     setLoading(true);
     try {
-      await register(formData);
-      success('Account registered successfully! Welcome to Pawsome Haven.');
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        role: formData.role,
+      };
+
+      await register(payload);
+      success('Account created successfully! Welcome to Pawsome Haven.');
       navigate('/pets');
     } catch (err) {
       toastError(err.message || 'Registration failed');
@@ -59,17 +73,17 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-lg space-y-6">
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-brand-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-brand-500/25">
             <PawPrint className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Create an Account
+          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Create Your Account
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Join thousands of adopters connecting with rescue pets.
+            Sign up to adopt, track your applications, and chat directly with shelter caregivers.
           </p>
         </div>
 
@@ -78,7 +92,7 @@ export const RegisterPage = () => {
             <Input
               label="Full Name"
               name="name"
-              placeholder="Emma Watson"
+              placeholder="e.g. John Doe"
               icon={User}
               value={formData.name}
               onChange={handleChange}
@@ -90,7 +104,7 @@ export const RegisterPage = () => {
               label="Email Address"
               type="email"
               name="email"
-              placeholder="emma@example.com"
+              placeholder="john@example.com"
               icon={Mail}
               value={formData.email}
               onChange={handleChange}
@@ -98,17 +112,31 @@ export const RegisterPage = () => {
               required
             />
 
-            <Input
-              label="Password"
-              type="password"
-              name="password"
-              placeholder="At least 6 characters"
-              icon={Lock}
-              value={formData.password}
-              onChange={handleChange}
-              error={errors.password}
-              required
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Password"
+                type="password"
+                name="password"
+                placeholder="••••••••"
+                icon={Lock}
+                value={formData.password}
+                onChange={handleChange}
+                error={errors.password}
+                required
+              />
+
+              <Input
+                label="Confirm Password"
+                type="password"
+                name="confirmPassword"
+                placeholder="••••••••"
+                icon={Lock}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                error={errors.confirmPassword}
+                required
+              />
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
@@ -130,33 +158,56 @@ export const RegisterPage = () => {
               />
             </div>
 
-            {/* Account Role Selector */}
-            <div className="pt-1">
-              <label className="text-xs font-medium text-slate-700 dark:text-slate-300 block mb-1">
-                Account Type
+            {/* Role selection */}
+            <div className="pt-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                Register as:
               </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="user"
-                    checked={formData.role === 'user'}
-                    onChange={handleChange}
-                    className="text-brand-500 focus:ring-brand-400"
-                  />
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">Adopter</span>
+              <div className="grid grid-cols-2 gap-3">
+                <label
+                  className={`p-3 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                    formData.role === 'user'
+                      ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300 font-bold'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="user"
+                      checked={formData.role === 'user'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <span>🐶 Pet Adopter</span>
+                  </div>
+                  {formData.role === 'user' && (
+                    <CheckCircle2 className="w-4 h-4 text-brand-500" />
+                  )}
                 </label>
-                <label className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="admin"
-                    checked={formData.role === 'admin'}
-                    onChange={handleChange}
-                    className="text-brand-500 focus:ring-brand-400"
-                  />
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">Shelter Admin</span>
+
+                <label
+                  className={`p-3 rounded-2xl border text-xs cursor-pointer transition-all flex items-center justify-between ${
+                    formData.role === 'admin'
+                      ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300 font-bold'
+                      : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="role"
+                      value="admin"
+                      checked={formData.role === 'admin'}
+                      onChange={handleChange}
+                      className="sr-only"
+                    />
+                    <span>🛡️ Shelter Admin</span>
+                  </div>
+                  {formData.role === 'admin' && (
+                    <CheckCircle2 className="w-4 h-4 text-brand-500" />
+                  )}
                 </label>
               </div>
             </div>
@@ -167,9 +218,9 @@ export const RegisterPage = () => {
               size="lg"
               fullWidth
               loading={loading}
-              className="shadow-md shadow-brand-500/20"
+              className="shadow-md shadow-brand-500/20 mt-2"
             >
-              Register & Continue
+              Complete Registration & Sign In
             </Button>
           </form>
 
@@ -179,7 +230,7 @@ export const RegisterPage = () => {
               to="/login"
               className="font-bold text-brand-600 dark:text-brand-400 hover:underline"
             >
-              Sign In
+              Sign In here
             </Link>
           </div>
         </div>

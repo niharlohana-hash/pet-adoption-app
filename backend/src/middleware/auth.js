@@ -5,11 +5,16 @@ const User = require('../models/User');
 const protect = async (req, res, next) => {
   let token;
 
+  // 1. Check Authorization Bearer header
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // 2. Or check HTTP-only cookie
+  else if (req.cookies && req.cookies.token && req.cookies.token !== 'none') {
+    token = req.cookies.token;
   }
 
   if (!token) {
@@ -51,6 +56,8 @@ const optionalAuth = async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies && req.cookies.token && req.cookies.token !== 'none') {
+    token = req.cookies.token;
   }
 
   if (!token) {

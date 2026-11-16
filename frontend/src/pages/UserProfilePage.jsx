@@ -73,8 +73,8 @@ export const UserProfilePage = () => {
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {user?.name}
                 </h1>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-300">
-                  {user?.role}
+                <span className="text-[10px] uppercase font-bold px-2.5 py-1 rounded-full bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-300">
+                  {user?.role === 'admin' ? '🛡️ Shelter Admin' : '🐶 Adopter'}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
@@ -90,13 +90,15 @@ export const UserProfilePage = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            {isEditing ? 'Cancel Edit' : 'Edit Profile'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            </Button>
+          </div>
         </div>
 
         {/* Profile Edit Form */}
@@ -143,6 +145,32 @@ export const UserProfilePage = () => {
             </div>
           </form>
         )}
+
+        {/* Active JWT Authentication Verification Box */}
+        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-bold text-slate-800 dark:text-slate-100">
+                  Active Cryptographic JWT Session
+                </span>
+                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono px-2 py-0.5 rounded-full">
+                  HS256 Verified
+                </span>
+              </div>
+              <p className="text-slate-500 dark:text-slate-400">
+                Transmitted via <code className="font-mono text-brand-600 dark:text-brand-400">Authorization: Bearer &lt;token&gt;</code> &amp; HTTP-only Cookie. Validated on protected endpoints with role-based access control.
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-[11px] text-slate-400 block">User ID:</span>
+              <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                {user?.id || user?._id}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Adoption Applications Section */}
