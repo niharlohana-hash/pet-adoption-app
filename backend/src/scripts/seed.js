@@ -8,9 +8,11 @@ const Message = require('../models/Message');
 const Notification = require('../models/Notification');
 const { connectDB } = require('../config/db');
 
-const seedData = async () => {
+const seedData = async (exitOnFinish = true) => {
   try {
-    await connectDB();
+    if (mongoose.connection.readyState === 0) {
+      await connectDB();
+    }
     console.log('🧹 Clearing existing database collections...');
 
     await User.deleteMany();
@@ -422,11 +424,21 @@ const seedData = async () => {
     console.log('   User 2: liam@example.com / User@123');
     console.log('----------------------------------------------------');
 
-    process.exit(0);
+    if (exitOnFinish) {
+      process.exit(0);
+    }
+    return true;
   } catch (error) {
     console.error('❌ Error seeding database:', error);
-    process.exit(1);
+    if (exitOnFinish) {
+      process.exit(1);
+    }
+    throw error;
   }
 };
 
-seedData();
+if (require.main === module) {
+  seedData(true);
+}
+
+module.exports = { seedData };

@@ -99,6 +99,16 @@ const PORT = process.env.PORT || 5001;
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Auto-seed if database is freshly started and empty
+    const Pet = require('./models/Pet');
+    const petCount = await Pet.countDocuments();
+    if (petCount === 0) {
+      console.log('🌱 Database is empty. Auto-seeding initial pet listings and demo accounts...');
+      const { seedData } = require('./scripts/seed');
+      await seedData(false);
+    }
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
       console.log(`📖 API Documentation available at: http://localhost:${PORT}/api/docs`);
