@@ -1,0 +1,58 @@
+services:
+  # MongoDB Database Service
+  mongo:
+    image: mongo:7-jammy
+    container_name: pawsome_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: pet_adoption
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - pawsome-network
+
+  # Node.js Express + Socket.IO Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pawsome_backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - PORT=5001
+      - MONGO_URI=mongodb://mongo:27017/pet_adoption
+      - USE_MEMORY_DB=false
+      - JWT_SECRET=supersecretpawsomejwtkey_docker_2026_petadoption
+      - JWT_EXPIRES_IN=7d
+      - CLIENT_URL=http://localhost
+    depends_on:
+      - mongo
+    networks:
+      - pawsome-network
+
+  # React + Tailwind + Nginx Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pawsome_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - pawsome-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  pawsome-network:
+    driver: bridge

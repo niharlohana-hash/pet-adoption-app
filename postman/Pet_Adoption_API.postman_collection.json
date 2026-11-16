@@ -1,0 +1,363 @@
+{
+  "info": {
+    "_postman_id": "77f72671-8bc6-4e56-9b51-50e588efba55",
+    "name": "Pawsome Haven - Pet Adoption REST API",
+    "description": "Comprehensive Postman collection for the Pet Adoption full-stack platform covering Authentication, CRUD operations, RBAC authorization, applications, chat, and analytics.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "petId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sarah Jenkins\",\n  \"email\": \"sarah.test@example.com\",\n  \"password\": \"User@123\",\n  \"phone\": \"+1 (415) 555-0999\",\n  \"address\": \"San Francisco, CA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "  pm.collectionVariables.set('authToken', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"User@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "  pm.collectionVariables.set('adminToken', jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@pawsome.org\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile (Me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pets",
+      "item": [
+        {
+          "name": "Get All Pets (with filters)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pets?species=Dog&status=Available&page=1&limit=9",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets"],
+              "query": [
+                { "key": "species", "value": "Dog" },
+                { "key": "status", "value": "Available" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "9" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Featured Pets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pets/featured",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets", "featured"]
+            }
+          }
+        },
+        {
+          "name": "Create Pet (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Max\",\n  \"species\": \"Dog\",\n  \"breed\": \"Siberian Husky\",\n  \"age\": 2,\n  \"gender\": \"Male\",\n  \"size\": \"Large\",\n  \"photos\": [\"https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&w=800&q=80\"],\n  \"description\": \"High energy, loving husky with icy blue eyes! Loves snow, running, and singing along to tunes.\",\n  \"healthStatus\": \"Vaccinated, dewormed, clean bill of health\",\n  \"vaccinated\": true,\n  \"spayedNeutered\": true,\n  \"adoptionFee\": 150,\n  \"status\": \"Available\",\n  \"location\": \"San Francisco, CA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/pets",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets"]
+            }
+          }
+        },
+        {
+          "name": "Get Pet By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/pets/{{petId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pets", "{{petId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Submit Adoption Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{petId}}\",\n  \"fullName\": \"Emma Watson\",\n  \"email\": \"user@example.com\",\n  \"phone\": \"+1 (415) 555-0144\",\n  \"address\": \"220 Market St, San Francisco, CA\",\n  \"housingType\": \"Own House\",\n  \"hasYard\": true,\n  \"hasOtherPets\": false,\n  \"householdMembers\": 2,\n  \"petExperience\": \"Experienced pet owner\",\n  \"reasonForAdoption\": \"We have owned dogs for 10 years and have a large fenced backyard.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications"]
+            }
+          }
+        },
+        {
+          "name": "Get My Applications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/applications/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "my"]
+            }
+          }
+        },
+        {
+          "name": "Get All Applications (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/applications?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications"],
+              "query": [{ "key": "status", "value": "pending" }]
+            }
+          }
+        },
+        {
+          "name": "Update Application Status (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"reviewNotes\": \"Application approved! Please come in this Saturday for meet and greet.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "{{applicationId}}", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat & Real-Time",
+      "item": [
+        {
+          "name": "Get User Conversations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/chat/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "conversations"]
+            }
+          }
+        },
+        {
+          "name": "Start Conversation with Shelter",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{petId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/chat/conversations",
+              "host": ["{{baseUrl}}"],
+              "path": ["chat", "conversations"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard Statistics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["stats"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

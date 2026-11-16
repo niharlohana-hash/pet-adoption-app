@@ -1,0 +1,17 @@
+{
+  "name": "pet-adoption-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack Pet Adoption Platform (React, Tailwind CSS, Express, MongoDB, Socket.io)",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "seed": "npm --prefix backend run seed",
+    "test": "npm --prefix backend test",
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run dev",
+    "dev": "node -e \"console.log('Use concurrent terminal tabs or npm run backend & npm run frontend')\""
+  },
+  "keywords": ["pet-adoption", "full-stack", "react", "tailwind", "express", "mongodb", "socketio"],
+  "author": "Pawsome Haven Team",
+  "license": "MIT"
+}

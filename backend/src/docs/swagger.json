@@ -1,0 +1,200 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Pawsome Haven - Pet Adoption REST API",
+    "version": "1.0.0",
+    "description": "Comprehensive RESTful API for pet adoption, applications, real-time messaging, and shelter management."
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Local API server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["user", "admin"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered successfully" },
+          "400": { "description": "Validation error or email already in use" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user and get JWT",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Logged in successfully with token" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get current logged-in user profile",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/pets": {
+      "get": {
+        "summary": "List all pets with search, filter, and pagination",
+        "tags": ["Pets"],
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "species", "in": "query", "schema": { "type": "string" } },
+          { "name": "gender", "in": "query", "schema": { "type": "string" } },
+          { "name": "size", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of pets" }
+        }
+      },
+      "post": {
+        "summary": "Create a new pet listing (Admin only)",
+        "tags": ["Pets"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "201": { "description": "Pet created" },
+          "403": { "description": "Forbidden - Admin required" }
+        }
+      }
+    },
+    "/pets/{id}": {
+      "get": {
+        "summary": "Get pet details by ID",
+        "tags": ["Pets"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pet details" },
+          "404": { "description": "Pet not found" }
+        }
+      },
+      "put": {
+        "summary": "Update pet details (Admin only)",
+        "tags": ["Pets"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Pet updated" } }
+      },
+      "delete": {
+        "summary": "Delete pet (Admin only)",
+        "tags": ["Pets"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Pet deleted" } }
+      }
+    },
+    "/applications": {
+      "post": {
+        "summary": "Submit an adoption application",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Application submitted" } }
+      },
+      "get": {
+        "summary": "Get all applications (Admin only)",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "List of applications" } }
+      }
+    },
+    "/applications/my": {
+      "get": {
+        "summary": "Get applications for current user",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "User applications" } }
+      }
+    },
+    "/applications/{id}/status": {
+      "patch": {
+        "summary": "Approve or reject application (Admin only)",
+        "tags": ["Applications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Status updated and applicant notified" } }
+      }
+    },
+    "/chat/conversations": {
+      "get": {
+        "summary": "Get user conversations",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Conversations list" } }
+      },
+      "post": {
+        "summary": "Create or get conversation",
+        "tags": ["Chat"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Conversation details" } }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "Get user notifications",
+        "tags": ["Notifications"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Notifications list" } }
+      }
+    },
+    "/stats": {
+      "get": {
+        "summary": "Get analytics and adoption metrics (Admin only)",
+        "tags": ["Analytics"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "Admin statistics" } }
+      }
+    }
+  }
+}
