@@ -25,7 +25,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5001
-      - MONGO_URI=mongodb://mongo:27017/pet_adoption
+      - MONGO_URI=mongodb+srv://niharlohana_db_user:Stg0vxFgyIxRhQ0J@cluster0.jy0fmmc.mongodb.net/pet_adoption?retryWrites=true&w=majority
       - USE_MEMORY_DB=false
       - JWT_SECRET=supersecretpawsomejwtkey_docker_2026_petadoption
       - JWT_EXPIRES_IN=7d

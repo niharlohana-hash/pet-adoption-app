@@ -6,8 +6,8 @@ const connectDB = async () => {
   try {
     let mongoURI = process.env.MONGO_URI;
 
-    // If explicit memory DB requested or no URI provided, use MongoMemoryServer for instant zero-config setup
-    if (!mongoURI || process.env.USE_MEMORY_DB === 'true') {
+    // If explicit memory DB requested or no URI provided, use MongoMemoryServer for instant zero-config setup (dev only)
+    if ((!mongoURI || process.env.USE_MEMORY_DB === 'true') && process.env.NODE_ENV !== 'production') {
       try {
         const { MongoMemoryServer } = require('mongodb-memory-server');
         mongod = await MongoMemoryServer.create();
@@ -20,15 +20,15 @@ const connectDB = async () => {
     }
 
     const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 30000,
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
     return conn;
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // If standard connection fails and memory server wasn't tried, attempt memory server fallback
-    if (!mongod) {
+    // If standard connection fails and memory server wasn't tried, attempt memory server fallback ONLY in dev
+    if (!mongod && process.env.NODE_ENV !== 'production' && process.env.USE_MEMORY_DB === 'true') {
       try {
         console.log('🔄 Attempting fallback to MongoMemoryServer...');
         const { MongoMemoryServer } = require('mongodb-memory-server');
