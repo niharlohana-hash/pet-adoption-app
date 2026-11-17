@@ -13,8 +13,15 @@ export const SocketProvider = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
+    // Determine socket server target
+    const socketOrigin =
+      import.meta.env.VITE_SOCKET_URL ||
+      (import.meta.env.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+        : window.location.origin);
+
     // Create socket connection
-    const newSocket = io(window.location.origin, {
+    const newSocket = io(socketOrigin, {
       auth: { token },
       autoConnect: true,
       reconnectionAttempts: 5,
