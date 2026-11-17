@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { api } from '../../services/api';
+import { Heart, Calendar, Home, CheckCircle2 } from 'lucide-react';
 
 export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
   const { user } = useAuth();
@@ -12,10 +13,10 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    address: user?.address || '',
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
     housingType: 'Own House',
     hasYard: false,
     hasOtherPets: false,
@@ -26,6 +27,25 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
   });
 
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (isOpen && pet) {
+      setFormData({
+        fullName: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        address: user?.address || 'San Francisco, CA',
+        housingType: 'Own House',
+        hasYard: true,
+        hasOtherPets: false,
+        otherPetsDetails: '',
+        householdMembers: '2',
+        petExperience: 'Experienced pet owner',
+        reasonForAdoption: `We are interested in meeting and adopting ${pet.name}! We have a welcoming home ready.`,
+      });
+      setErrors({});
+    }
+  }, [isOpen, pet, user]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -41,13 +61,12 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
   const validate = () => {
     const errs = {};
     if (!formData.fullName.trim()) errs.fullName = 'Full name is required';
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      errs.email = 'Valid email is required';
+    if (!formData.email.trim() || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      errs.email = 'Please provide a valid email address';
     }
     if (!formData.phone.trim()) errs.phone = 'Phone number is required';
-    if (!formData.address.trim()) errs.address = 'Current address is required';
-    if (!formData.reasonForAdoption.trim() || formData.reasonForAdoption.trim().length < 15) {
-      errs.reasonForAdoption = 'Please provide at least 15 characters explaining your adoption motivation';
+    if (!formData.reasonForAdoption.trim() || formData.reasonForAdoption.trim().length < 10) {
+      errs.reasonForAdoption = 'Please write at least 10 characters explaining your meet/adoption request';
     }
 
     setErrors(errs);
@@ -60,12 +79,24 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
 
     setLoading(true);
     try {
-      await api.applications.create({
+      const payload = {
         petId: pet._id,
-        ...formData,
-      });
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim() || 'Address to be verified at shelter visit',
+        housingType: formData.housingType,
+        hasYard: Boolean(formData.hasYard),
+        hasOtherPets: Boolean(formData.hasOtherPets),
+        otherPetsDetails: formData.otherPetsDetails.trim(),
+        householdMembers: Number(formData.householdMembers) || 1,
+        petExperience: formData.petExperience,
+        reasonForAdoption: formData.reasonForAdoption.trim(),
+      };
 
-      success(`Adoption application for ${pet.name} submitted successfully!`);
+      await api.applications.create(payload);
+
+      success(`Meet & Adoption request for ${pet.name} sent to Shelter Admin Board!`);
       if (onSubmitted) onSubmitted();
       onClose();
     } catch (err) {
@@ -81,24 +112,25 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Adopt ${pet.name}`}
-      subtitle={`Submit your adoption application for this wonderful ${pet.breed}.`}
+      title={`Request to Meet & Adopt: ${pet.name}`}
+      subtitle={`Submit your request to meet ${pet.name} (${pet.breed}). Your request will appear on the Shelter Admin Board.`}
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {/* Pet Header Card */}
-        <div className="flex items-center gap-3 p-3 bg-brand-50/60 dark:bg-brand-950/20 rounded-xl border border-brand-100 dark:border-brand-900">
+        <div className="flex items-center gap-3 p-3 bg-brand-50/70 dark:bg-brand-950/30 rounded-2xl border border-brand-200 dark:border-brand-900">
           <img
             src={pet.photos?.[0]}
             alt={pet.name}
-            className="w-14 h-14 rounded-lg object-cover"
+            className="w-14 h-14 rounded-xl object-cover"
           />
           <div>
-            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-              {pet.name} ({pet.breed})
+            <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <span>{pet.name}</span>
+              <span className="text-xs font-normal text-slate-500">({pet.breed})</span>
             </h4>
-            <p className="text-slate-500 dark:text-slate-400">
-              {pet.age} {pet.ageUnit || 'yrs'} old • {pet.gender} • Adoption Fee: ${pet.adoptionFee}
+            <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+              {pet.species} • {pet.age} {pet.ageUnit || 'yrs'} old • {pet.gender} • Adoption Fee: ${pet.adoptionFee}
             </p>
           </div>
         </div>
@@ -106,8 +138,9 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
         {/* Applicant Contact */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
-            label="Full Name"
+            label="Your Full Name"
             name="fullName"
+            placeholder="e.g. Alex Morgan"
             value={formData.fullName}
             onChange={handleChange}
             error={errors.fullName}
@@ -117,6 +150,7 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
             label="Email Address"
             type="email"
             name="email"
+            placeholder="alex@example.com"
             value={formData.email}
             onChange={handleChange}
             error={errors.email}
@@ -130,18 +164,16 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            placeholder="(415) 555-0100"
+            placeholder="(415) 555-0144"
             error={errors.phone}
             required
           />
           <Input
-            label="Current Home Address"
+            label="City / Home Address"
             name="address"
             value={formData.address}
             onChange={handleChange}
-            placeholder="123 Main St, City, State"
-            error={errors.address}
-            required
+            placeholder="San Francisco, CA"
           />
         </div>
 
@@ -201,7 +233,7 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
               className="rounded text-brand-500 focus:ring-brand-400"
             />
             <span className="text-slate-700 dark:text-slate-300 font-medium">
-              Fenced yard or patio available
+              Fenced yard or spacious patio available
             </span>
           </label>
 
@@ -225,18 +257,18 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
             name="otherPetsDetails"
             value={formData.otherPetsDetails}
             onChange={handleChange}
-            placeholder="e.g. 1 senior cat, vaccinated and neutered"
+            placeholder="e.g. 1 senior cat, friendly with dogs"
           />
         )}
 
         <Input
-          label="Why are you a good fit for this pet?"
+          label={`Why would you like to meet & adopt ${pet.name}?`}
           as="textarea"
           name="reasonForAdoption"
           value={formData.reasonForAdoption}
           onChange={handleChange}
           rows={3}
-          placeholder="Describe your daily routine, exercise plans, and how you will care for this companion..."
+          placeholder={`Describe your daily routine, preferred meet & greet times, and how you will welcome ${pet.name}...`}
           error={errors.reasonForAdoption}
           required
         />
@@ -245,8 +277,8 @@ export const ApplicationModal = ({ isOpen, onClose, pet, onSubmitted }) => {
           <Button variant="ghost" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={loading}>
-            Submit Application
+          <Button type="submit" variant="primary" loading={loading} icon={Heart}>
+            Submit Request to Admin Board
           </Button>
         </div>
       </form>

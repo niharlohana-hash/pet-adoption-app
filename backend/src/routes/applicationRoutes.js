@@ -7,11 +7,13 @@ const {
   getApplicationById,
   updateApplicationStatus,
 } = require('../controllers/applicationController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, optionalAuth, authorize } = require('../middleware/auth');
 const { validateApplication } = require('../middleware/validate');
 
-// User applications
-router.post('/', protect, validateApplication, createApplication);
+// Adopter Meet & Adoption request submission (accessible to both logged-in users and new adopters)
+router.post('/', optionalAuth, validateApplication, createApplication);
+
+// User's personal applications
 router.get('/my', protect, getMyApplications);
 
 // Admin view all applications

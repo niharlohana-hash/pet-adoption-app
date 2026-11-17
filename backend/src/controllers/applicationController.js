@@ -3,9 +3,9 @@ const Pet = require('../models/Pet');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-// @desc    Submit an adoption application
+// @desc    Submit an adoption & meet request
 // @route   POST /api/applications
-// @access  Private
+// @access  Public / Optional Auth (Supports both authenticated users & guest adopters)
 const createApplication = async (req, res, next) => {
   try {
     const {
@@ -28,48 +28,74 @@ const createApplication = async (req, res, next) => {
     if (!pet) {
       return res.status(404).json({
         success: false,
-        message: 'Pet not found',
+        message: 'Pet not found with specified ID',
       });
     }
 
     if (pet.status === 'Adopted') {
       return res.status(400).json({
         success: false,
-        message: 'This pet has already been adopted',
+        message: `Sorry, ${pet.name} has already found their forever home.`,
       });
+    }
+
+    // Determine applicant user ID
+    let applicantId;
+    let applicantName = (fullName || '').trim();
+    let applicantEmail = (email || '').trim().toLowerCase();
+
+    if (req.user) {
+      applicantId = req.user._id;
+      applicantName = applicantName || req.user.name;
+      applicantEmail = applicantEmail || req.user.email;
+    } else {
+      // Find or auto-register adopter account so they have a persistent record
+      let user = await User.findOne({ email: applicantEmail });
+      if (!user) {
+        user = await User.create({
+          name: applicantName || 'Prospective Adopter',
+          email: applicantEmail,
+          password: 'User@123',
+          phone: phone || '',
+          address: address || '',
+          role: 'user',
+        });
+      }
+      applicantId = user._id;
     }
 
     // Check if user already submitted a pending application for this pet
     const existing = await Application.findOne({
       pet: petId,
-      applicant: req.user._id,
+      applicant: applicantId,
       status: 'pending',
     });
 
     if (existing) {
       return res.status(400).json({
         success: false,
-        message: 'You already have an active pending application for this pet.',
+        message: `You already have an active pending meet & adoption request for ${pet.name}. Our shelter team is reviewing it!`,
       });
     }
 
     const application = await Application.create({
       pet: petId,
-      applicant: req.user._id,
-      fullName: fullName || req.user.name,
-      email: email || req.user.email,
-      phone,
-      address,
-      housingType,
+      applicant: applicantId,
+      fullName: applicantName,
+      email: applicantEmail,
+      phone: phone || 'Not provided',
+      address: address || 'Provided during meet & greet',
+      housingType: housingType || 'Own House',
       hasYard: Boolean(hasYard),
       hasOtherPets: Boolean(hasOtherPets),
       otherPetsDetails: otherPetsDetails || '',
       householdMembers: Number(householdMembers) || 1,
-      petExperience,
-      reasonForAdoption,
+      petExperience: petExperience || 'Experienced pet owner',
+      reasonForAdoption: reasonForAdoption || `Request to meet and adopt ${pet.name}`,
+      status: 'pending',
     });
 
-    // Optionally update pet status to 'Pending' if currently Available
+    // Mark pet as 'Pending' if currently Available
     if (pet.status === 'Available') {
       pet.status = 'Pending';
       await pet.save();
@@ -77,20 +103,20 @@ const createApplication = async (req, res, next) => {
 
     // Populate for response
     const populatedApp = await Application.findById(application._id)
-      .populate('pet', 'name species breed photos status adoptionFee')
-      .populate('applicant', 'name email avatar');
+      .populate('pet', 'name species breed photos status adoptionFee location')
+      .populate('applicant', 'name email avatar phone address');
 
-    // Notify admins
+    // Notify all shelter admins
     const admins = await User.find({ role: 'admin' });
     const io = req.app.get('io');
 
     for (const admin of admins) {
       const notif = await Notification.create({
         recipient: admin._id,
-        sender: req.user._id,
+        sender: applicantId,
         type: 'new_application',
-        title: 'New Adoption Application',
-        message: `${req.user.name} applied to adopt ${pet.name}`,
+        title: '🐾 New Meet & Adoption Request!',
+        message: `${applicantName} requested to meet & adopt ${pet.name} (${pet.breed})`,
         data: { applicationId: application._id, petId: pet._id },
       });
 
@@ -99,13 +125,16 @@ const createApplication = async (req, res, next) => {
       }
     }
 
+    // Broadcast real-time event to Admin Board and clients
     if (io) {
+      io.to('admin_channel').emit('new_application', { application: populatedApp });
+      io.emit('new_application', { application: populatedApp });
       io.emit('pet_updated', { pet });
     }
 
     res.status(201).json({
       success: true,
-      message: 'Adoption application submitted successfully! Our shelter team will review it shortly.',
+      message: `Your request to meet & adopt ${pet.name} has been submitted! It is now pending review on the Shelter Admin Board.`,
       application: populatedApp,
     });
   } catch (error) {
@@ -137,7 +166,7 @@ const getMyApplications = async (req, res, next) => {
 // @access  Private/Admin
 const getAllApplications = async (req, res, next) => {
   try {
-    const { status, petId, page = 1, limit = 20 } = req.query;
+    const { status, petId, page = 1, limit = 50 } = req.query;
     const query = {};
 
     if (status && status !== 'All') {
@@ -154,7 +183,7 @@ const getAllApplications = async (req, res, next) => {
 
     const total = await Application.countDocuments(query);
     const applications = await Application.find(query)
-      .populate('pet', 'name species breed photos status adoptionFee')
+      .populate('pet', 'name species breed photos status adoptionFee location')
       .populate('applicant', 'name email avatar phone address')
       .populate('reviewedBy', 'name email')
       .sort({ createdAt: -1 })

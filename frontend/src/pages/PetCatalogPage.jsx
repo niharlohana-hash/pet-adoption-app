@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePets } from '../hooks/usePets';
 import { PetFilters } from '../components/pets/PetFilters';
 import { PetCard } from '../components/pets/PetCard';
+import { ApplicationModal } from '../components/applications/ApplicationModal';
 import { SkeletonCard } from '../components/common/SkeletonCard';
 import { Button } from '../components/common/Button';
 import { ChevronLeft, ChevronRight, Frown, PawPrint } from 'lucide-react';
@@ -10,6 +11,7 @@ import { ChevronLeft, ChevronRight, Frown, PawPrint } from 'lucide-react';
 export const PetCatalogPage = () => {
   const [searchParams] = useSearchParams();
   const initialSpecies = searchParams.get('species') || 'All';
+  const [selectedPetForMeet, setSelectedPetForMeet] = useState(null);
 
   const {
     pets,
@@ -89,9 +91,25 @@ export const PetCatalogPage = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {pets.map((pet) => (
-            <PetCard key={pet._id} pet={pet} />
+            <PetCard
+              key={pet._id}
+              pet={pet}
+              onMeetPet={(p) => setSelectedPetForMeet(p)}
+            />
           ))}
         </div>
+      )}
+
+      {/* Meet Pet Application Modal */}
+      {selectedPetForMeet && (
+        <ApplicationModal
+          pet={selectedPetForMeet}
+          isOpen={!!selectedPetForMeet}
+          onClose={() => setSelectedPetForMeet(null)}
+          onSubmitted={() => {
+            updateFilter('page', filters.page);
+          }}
+        />
       )}
 
       {/* Pagination Controls */}

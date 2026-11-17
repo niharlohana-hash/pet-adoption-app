@@ -229,7 +229,7 @@ export const PetDetailPage = () => {
                 <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
                   🎉 {pet.name} has already found their forever home!
                 </div>
-              ) : isAuthenticated ? (
+              ) : (
                 <Button
                   size="lg"
                   variant="primary"
@@ -238,14 +238,8 @@ export const PetDetailPage = () => {
                   icon={Heart}
                   className="shadow-lg shadow-brand-500/25"
                 >
-                  Apply to Adopt {pet.name}
+                  Meet & Adopt {pet.name}
                 </Button>
-              ) : (
-                <Link to="/login" state={{ from: `/pets/${pet._id}` }}>
-                  <Button size="lg" variant="primary" fullWidth icon={Heart}>
-                    Sign In to Apply for {pet.name}
-                  </Button>
-                </Link>
               )}
 
               {/* Real-time Shelter Chat Button */}

@@ -14,24 +14,26 @@ import {
 import { Button } from '../components/common/Button';
 import { PetCard } from '../components/pets/PetCard';
 import { SkeletonCard } from '../components/common/SkeletonCard';
+import { ApplicationModal } from '../components/applications/ApplicationModal';
 import { api } from '../services/api';
 
 export const HomePage = () => {
   const [featuredPets, setFeaturedPets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPetForMeet, setSelectedPetForMeet] = useState(null);
+
+  const fetchFeatured = async () => {
+    try {
+      const res = await api.pets.getFeatured();
+      setFeaturedPets(res.pets || []);
+    } catch (err) {
+      console.error('Failed to load featured pets:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const res = await api.pets.getFeatured();
-        setFeaturedPets(res.pets || []);
-      } catch (err) {
-        console.error('Failed to load featured pets:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchFeatured();
   }, []);
 
@@ -234,10 +236,28 @@ export const HomePage = () => {
               No pets available right now. Check back soon!
             </div>
           ) : (
-            featuredPets.map((pet) => <PetCard key={pet._id} pet={pet} />)
+            featuredPets.map((pet) => (
+              <PetCard
+                key={pet._id}
+                pet={pet}
+                onMeetPet={(p) => setSelectedPetForMeet(p)}
+              />
+            ))
           )}
         </div>
       </section>
+
+      {/* Meet Pet Application Modal */}
+      {selectedPetForMeet && (
+        <ApplicationModal
+          pet={selectedPetForMeet}
+          isOpen={!!selectedPetForMeet}
+          onClose={() => setSelectedPetForMeet(null)}
+          onSubmitted={() => {
+            fetchFeatured();
+          }}
+        />
+      )}
 
       {/* How It Works Section */}
       <section id="how-it-works" className="bg-slate-100/60 dark:bg-slate-900/40 py-16 sm:py-20 border-y border-slate-200 dark:border-slate-800">

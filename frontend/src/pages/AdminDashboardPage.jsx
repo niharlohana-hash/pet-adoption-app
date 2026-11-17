@@ -13,13 +13,15 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { PetFormModal } from '../components/pets/PetFormModal';
 import { ApplicationCard } from '../components/applications/ApplicationCard';
 
 export const AdminDashboardPage = () => {
-  const { success, error: toastError } = useToast();
+  const { success, error: toastError, info } = useToast();
+  const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('pets'); // 'pets' | 'applications' | 'stats'
 
   // Stats
@@ -82,6 +84,33 @@ export const AdminDashboardPage = () => {
   useEffect(() => {
     fetchApplications();
   }, [appStatusFilter]);
+
+  // Real-time listener for new adopter requests submitted via "Meet Pet"
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewApplication = (data) => {
+      const petName = data?.application?.pet?.name || 'a pet';
+      const applicantName = data?.application?.user?.name || data?.application?.applicantName || 'An adopter';
+      info(`📥 New Adopter Request: ${applicantName} wants to meet ${petName}!`);
+      fetchApplications();
+      fetchStats();
+      fetchPets();
+    };
+
+    const handlePetUpdated = () => {
+      fetchPets();
+      fetchStats();
+    };
+
+    socket.on('new_application', handleNewApplication);
+    socket.on('pet_updated', handlePetUpdated);
+
+    return () => {
+      socket.off('new_application', handleNewApplication);
+      socket.off('pet_updated', handlePetUpdated);
+    };
+  }, [socket]);
 
   const handleDeletePet = async (petId, petName) => {
     if (!window.confirm(`Are you sure you want to remove ${petName}? This will also remove any pending applications.`)) {
